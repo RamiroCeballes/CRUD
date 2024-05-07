@@ -4,6 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -12,7 +13,13 @@ export class UsersService {
 
   public async create(createUserDto: CreateUserDto) {
     try {
-      await this.userRepository.save(createUserDto);
+      const hash = await this.hashPassword(createUserDto.pass)
+      const NewDTO : CreateUserDto =
+      {
+        user: createUserDto.user,
+        pass: hash
+      }
+      await this.userRepository.save(NewDTO);
       return {
           statusCode:200,
           msg: 'Se realizó con éxito la inserción.',
@@ -44,5 +51,14 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+  async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    return hashedPassword;
+  }
+
+  async comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
+    return await bcrypt.compare(password, hashedPassword);
   }
 }
