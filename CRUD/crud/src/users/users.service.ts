@@ -12,12 +12,13 @@ export class UsersService {
   private userRepository: Repository <User>
 
   public async create(createUserDto: CreateUserDto) {
+    const saltRounds = 10;
     try {
-      const hash = await this.hashPassword(createUserDto.pass)
-      const NewDTO : CreateUserDto =
-      {
-        user: createUserDto.user,
-        pass: hash
+      const hashedPassword = await bcrypt.hash(createUserDto.pass, saltRounds);
+      var NewDTO : CreateUserDto;
+      NewDTO = {
+        user:createUserDto.user,
+        pass:hashedPassword
       }
       await this.userRepository.save(NewDTO);
       return {
@@ -29,7 +30,9 @@ export class UsersService {
       return new BadRequestException(error);
   }
   }
-
+  async comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
+    return await bcrypt.compare(password, hashedPassword);
+  }
   public async findAll() {
     var resultado: any
     try {
@@ -41,8 +44,16 @@ export class UsersService {
   }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  public async findOne(id: number, body: any) {
+    var resultado: any
+    try {
+      resultado = await this.userRepository.findOne({where: {id: id}});
+      return this.comparePasswords(body.pass,resultado.pass)
+
+  }
+  catch (error){
+      return new BadRequestException(error);
+  }
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
@@ -51,14 +62,5 @@ export class UsersService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
-  }
-  async hashPassword(password: string): Promise<string> {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    return hashedPassword;
-  }
-
-  async comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
-    return await bcrypt.compare(password, hashedPassword);
   }
 }
