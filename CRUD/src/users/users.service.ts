@@ -56,11 +56,35 @@ export class UsersService {
   }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+  async update(id: number, updateUserDto: UpdateUserDto) {
+      try {
+        await this.userRepository.createQueryBuilder()
+        .update(User)
+        .set({ user: updateUserDto.user,
+              pass: updateUserDto.pass
+         })
+        .where("id = :id", { id: id })
+        .execute();
+        return {
+          statusCode:200,
+          msg: 'Se realizó con éxito la modificación.',
+      };
+    }
+    catch (error){
+        return new BadRequestException(error);
+    }
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+    async remove(id: number) {
+      try {
+        await this.userRepository.delete(id);
+        return {
+          statusCode:200,
+          msg: 'Se realizó con éxito la eliminación.',
+      };
+    }
+    catch (error){
+        return new BadRequestException(error);
+    }
+    }
 }
